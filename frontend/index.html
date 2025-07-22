@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FHE Demo DApp</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h1>FHE Demo DApp</h1>
+  <button id="storeButton">Store Value</button>
+  <button id="getButton">Get Value</button>
+  <p id="result"></p>
+
+  <script>
+    const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Địa chỉ contract mới của bạn
+    const contractABI = [
+      {
+        "inputs": [{ "internalType": "uint256", "name": "encryptedValue", "type": "uint256" }],
+        "name": "storeEncrypted",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      },
+      {
+        "inputs": [],
+        "name": "getEncrypted",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+      }
+    ];
+
+    let provider;
+    let signer;
+    let contract;
+
+    async function init() {
+      if (typeof window.ethereum === "undefined") {
+        alert("Vui lòng cài đặt MetaMask!");
+        return;
+      }
+
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = provider.getSigner();
+      contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+      console.log("Đã kết nối MetaMask với ví:", await signer.getAddress());
+    }
+
+    async function storeValue() {
+      console.log("Đã bấm nút Store");
+
+      const value = prompt("Nhập số nguyên muốn lưu:");
+      if (!value) return;
+
+      try {
+        const tx = await contract.storeEncrypted(ethers.BigNumber.from(value));
+        console.log("Đang chờ xác nhận...");
+        await tx.wait();
+        alert("Đã lưu thành công!");
+      } catch (error) {
+        console.error("Lỗi khi lưu:", error);
+        alert("Lỗi khi lưu. Kiểm tra số bạn nhập có phải số nguyên không?");
+      }
+    }
+
+    async function getValue() {
+      try {
+        const value = await contract.getEncrypted();
+        document.getElementById("result").innerText = "Giá trị đã mã hóa: " + value.toString();
+      } catch (error) {
+        console.error("Lỗi khi đọc:", error);
+        alert("Lỗi khi đọc.");
+      }
+    }
+
+    window.onload = async () => {
+      await init();
+
+      document.getElementById("storeButton").addEventListener("click", storeValue);
+      document.getElementById("getButton").addEventListener("click", getValue);
+    };
+  </script>
+</body>
+</html>
